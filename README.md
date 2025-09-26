@@ -3,4 +3,4 @@ Not memecoin, coin memes!
 
 # requirements
 
-`pip install pytrends`
+`pip install pytrends python-dotenv`

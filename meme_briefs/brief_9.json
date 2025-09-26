@@ -1,7 +1,11 @@
 {
-    "search": "where to watch ryder cup",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 7:20:00\u202fPM UTC-7",
+    "search": "rapture",
+    "explanation": NaN,
+    "start_trending": "September 20, 2025 at 6:40:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://cdn.britannica.com/40/272540-050-7526C073/last-judgement-jean-cousin-the-younger-1585.jpg?w=400&h=300&c=crop",
+        "https://www.jewishjewels.org/wp-content/uploads/2021/01/large-shutterstock_31691323.jpg",
+        "https://cdn.britannica.com/40/272540-050-7526C073/last-judgement-jean-cousin-the-younger-1585.jpg"
+    ]
 }

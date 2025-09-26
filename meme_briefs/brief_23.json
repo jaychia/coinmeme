@@ -1,7 +1,11 @@
 {
-    "search": "peter thiel",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 10:10:00\u202fAM UTC-7",
+    "search": "india vs sri lanka",
+    "explanation": NaN,
+    "start_trending": "September 26, 2025 at 6:40:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://i.ytimg.com/vi/_ELdTQ5J46o/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBx0i-AbLOV-OPN4zWrNUKV4iqD3w",
+        "https://c.ndtvimg.com/2024-08/apmuujq8_india-sri-lanka-afp_625x300_07_August_24.jpg?im=FeatureCrop,algorithm=dnn,width=806,height=605",
+        "https://i.ytimg.com/vi/wt7p_gCTWpY/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB0QlShNJtdM7_K7ThpQ7V6Yh4Trw"
+    ]
 }

@@ -3,6 +3,7 @@ import os
 from pytrends.request import TrendReq # type: ignore
 import pandas as pd
 import json
+from dotenv import load_dotenv
 
 def main():
     print("Hello from coinmeme!")
@@ -25,32 +26,45 @@ def generate_meme_brief():
         csv_filename = "meme_briefs/trending_searches_fallback.csv"
         df = pd.read_csv(csv_filename)
         top_25 = df.head(25)
-        
+
+        api_key = os.getenv("GOOGLE_API_KEY")
+        cse_id = os.getenv("CSE_ID")
+        num_results = 3
+
         for i, row in enumerate(top_25.itertuples(index=False)):
             # Create a JSON for each trend
-            print(row)
             trend = row.Trends
             start_trending = row.Started
             end_trending = row.Ended
-            image_prompt = [] # fetch multiple images from flickr based on trend search word
+            description = row.Description
+
+            url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+                "key": api_key,
+                "cx": cse_id,
+                "q": trend,
+                "searchType": "image",
+                "num": num_results
+            }
+
+            response = requests.get(url, params=params)
+            data = response.json()
+
+            image_prompt = [item["link"] for item in data.get("items", [])] # fetch multiple images from google custom search based on trend search word
 
             with open(f"meme_briefs/brief_{i}.json", "w", encoding="utf-8") as f:
                 data = {
                     "search": trend,
-                    "explanation": "",
+                    "explanation": description,
                     "start_trending": start_trending,
                     "end_trending": end_trending,
-                    "image_prompt": image_prompt
+                    "google_image_prompt": image_prompt
                 }
-                json.dump(data, f, indent=4)  
-        
-
-
-            
-
+                json.dump(data, f, indent=4) 
         
 
 
 if __name__ == "__main__":
+    load_dotenv()
     main()
     generate_meme_brief()

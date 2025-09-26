@@ -1,7 +1,11 @@
 {
-    "search": "makena white",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 9:40:00\u202fAM UTC-7",
+    "search": "seahawks vs cardinals",
+    "explanation": NaN,
+    "start_trending": "September 24, 2025 at 6:30:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://i.ytimg.com/vi/Xhm1kZW82O8/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBKmM_SbD4guyk3warIkUJUA_yUkA",
+        "https://static.www.nfl.com/image/upload/t_editorial_landscape_12_desktop/league/imhz3uutro1tsk4zugpy",
+        "https://external-preview.redd.it/seattle-seahawks-vs-arizona-cardinals-breakdown-and-v0-9M2qZwK5ehk443zPmwiGOuyb7K5Y5tQXeYguWcnNyd8.jpg?width=640&crop=smart&auto=webp&s=32eb7690b8fb385cdd88b4969c901764dcc66cf6"
+    ]
 }

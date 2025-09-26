@@ -1,7 +1,11 @@
 {
-    "search": "tim allen",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 3:30:00\u202fPM UTC-7",
+    "search": "marvel zombies",
+    "explanation": NaN,
+    "start_trending": "September 22, 2025 at 9:10:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://m.media-amazon.com/images/M/MV5BNGNkYjI3ZWUtN2MzMS00NDg5LWE5MmYtZGE4Zjc0OGVhODM4XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+        "https://upload.wikimedia.org/wikipedia/en/thumb/0/0d/Marvel_Zombies_hardcover.jpg/250px-Marvel_Zombies_hardcover.jpg",
+        "https://cdn.marvel.com/content/1x/mor_banner_teaser_fullres_jjshaw_082125_cleanpsd_mech1.jpg"
+    ]
 }

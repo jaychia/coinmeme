@@ -1,7 +1,11 @@
 {
-    "search": "netanyahu",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 4:50:00\u202fAM UTC-7",
+    "search": "silent hill f",
+    "explanation": NaN,
+    "start_trending": "September 21, 2025 at 9:00:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://upload.wikimedia.org/wikipedia/en/7/7b/Silent_Hill_f_cover_art.png",
+        "https://cdn1.epicgames.com/spt-assets/6d34282a26c544df88ccc57505cdd2f0/silent-hill-f-1q1eg.jpg",
+        "https://cdn.mos.cms.futurecdn.net/CwXX57jrw9whM3Sz9FbC8F.png"
+    ]
 }

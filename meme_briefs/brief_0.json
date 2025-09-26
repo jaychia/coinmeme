@@ -1,7 +1,11 @@
 {
-    "search": "assata shakur",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 8:30:00\u202fPM UTC-7",
+    "search": "ryder cup",
+    "explanation": NaN,
+    "start_trending": "September 21, 2025 at 7:00:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://upload.wikimedia.org/wikipedia/en/thumb/d/da/RyderCupLogo.svg/1200px-RyderCupLogo.svg.png",
+        "https://res.cloudinary.com/rydercup-prod/w_383,h_216,c_fit,q_auto,g_center,dpr_2.0,f_auto/rydercup/images/tickets-hospitality/travel-packages.jpeg",
+        "https://cdn.shopify.com/s/files/1/1232/3010/files/ryder-cup-trophy_600x600.jpg?v=1695340960"
+    ]
 }

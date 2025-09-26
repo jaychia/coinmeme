@@ -1,7 +1,11 @@
 {
-    "search": "ryder cup standings",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 4:20:00\u202fAM UTC-7",
+    "search": "ryder cup schedule",
+    "explanation": NaN,
+    "start_trending": "September 21, 2025 at 3:40:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://res.cloudinary.com/rydercup-prod/rydercup/images/tickets-hospitality/travel-packages.jpeg",
+        "https://pbs.twimg.com/media/F7HwWSrW4AA60hP.jpg:large",
+        "https://res.cloudinary.com/rydercup-prod/w_960,c_fit,q_auto,g_center,dpr_2.0,f_auto/rydercup/pages/attendee-guide/RC.09.21.22.jpg"
+    ]
 }

@@ -1,7 +1,11 @@
 {
-    "search": "battle of wounded knee",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 3:50:00\u202fPM UTC-7",
+    "search": "huntington's disease",
+    "explanation": NaN,
+    "start_trending": "September 24, 2025 at 4:10:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://my.clevelandclinic.org/-/scassets/images/org/health/articles/14369-huntingtons-disease",
+        "https://webimg.biospective.com/publicstrapiuploads/MediaLibrary/Huntingtons_symptoms_8da95d3fe9.webp",
+        "https://www.fcneurology.net/wp-content/uploads/2022/07/huntingtons-disease-diagram.jpg"
+    ]
 }

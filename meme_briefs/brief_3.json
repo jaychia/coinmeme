@@ -1,7 +1,11 @@
 {
-    "search": "india vs sri lanka",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 6:40:00\u202fAM UTC-7",
+    "search": "assata shakur",
+    "explanation": NaN,
+    "start_trending": "September 25, 2025 at 8:30:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://media.newyorker.com/photos/590979b81c7a8e33fb38fe57/master/w_2560%2Cc_limit/Anderson-American-Fugitives-of-Havana-01.jpg",
+        "https://cst.brightspotcdn.com/dims4/default/d90a6d4/2147483647/strip/true/crop/657x850+0+0/resize/840x1087!/quality/90/?url=https%3A%2F%2Fchorus-production-cst-web.s3.us-east-1.amazonaws.com%2Fbrightspot%2F42%2Ff0%2Fd67afd17762d223ad09f67c6275e%2Frs7231-ap050511021581-scr.jpg",
+        "https://www.washingtoninformer.com/wp-content/uploads/2023/10/image-80.jpg"
+    ]
 }

@@ -1,7 +1,11 @@
 {
-    "search": "dann florek",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 6:00:00\u202fPM UTC-7",
+    "search": "government shutdown 2025",
+    "explanation": NaN,
+    "start_trending": "September 22, 2025 at 2:30:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://cdn.prod.website-files.com/661f6291e7df160adae7757b/67caf7f9a4cc479e8bf3523f_Government%20Shutdown%202025%20-%20What%20Is%20The%20Big%20News%20Here.jpg",
+        "https://www.investopedia.com/thmb/DJV11OpuIeobXm0_0CaYBce2-Lk=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-2187524721-045930963c5344f8bc75a8a121d4c3a9.jpg",
+        "http://evans.house.gov/sites/evo-subsites/evans.house.gov/files/evo-media-image/Government%20Shutdown%20%281%29.png"
+    ]
 }

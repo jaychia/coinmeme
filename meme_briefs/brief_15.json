@@ -1,7 +1,11 @@
 {
-    "search": "strasbourg vs marseille",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 10:50:00\u202fAM UTC-7",
+    "search": "fat bear week",
+    "explanation": NaN,
+    "start_trending": "September 22, 2025 at 4:00:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://media.cnn.com/api/v1/images/stellar/prod/191009025401-01-fat-bear-week-winner.jpg?q=x_11,y_282,h_941,w_1673,c_crop/h_720,w_1280",
+        "https://www.iidc.indiana.edu/eppley/images/2024-fbw-winner-grazer.jpg",
+        "https://www.nps.gov/katm/learn/images/2021-Bracket-01.jpg"
+    ]
 }

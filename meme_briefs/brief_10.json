@@ -1,7 +1,11 @@
 {
-    "search": "ryder cup golf",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 8:50:00\u202fAM UTC-7",
+    "search": "hurricane tracker",
+    "explanation": NaN,
+    "start_trending": "September 24, 2025 at 3:20:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://www.nhc.noaa.gov/images/cone_5day_with_wind.png",
+        "https://i.abcnewsfe.com/a/74ee05d8-8579-4da3-ac90-2960c8f6ddba/erin-2-abc-gmh-250814_1755174420346_hpEmbed_16x9.jpg",
+        "https://images.foxtv.com/static.fox26houston.com/www.fox26houston.com/content/uploads/2025/09/932/524/efe05139-tropical-outlook-1.jpg?ve=1&tl=1"
+    ]
 }

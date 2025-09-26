@@ -1,7 +1,11 @@
 {
-    "search": "bayern vs werder",
-    "explanation": "",
-    "start_trending": "September 26, 2025 at 8:50:00\u202fAM UTC-7",
+    "search": "james comey",
+    "explanation": NaN,
+    "start_trending": "September 24, 2025 at 12:30:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://upload.wikimedia.org/wikipedia/commons/f/ff/James_Comey_official_portrait_%283x4_cropped%29.jpg",
+        "https://www.fbi.gov/image-repository/directors/james-b-comey.jpg",
+        "https://i.guim.co.uk/img/media/3ae180747b482f7cba37d4dafc07132f1cd7ae09/0_99_2992_1795/master/2992.jpg?width=465&dpr=1&s=none&crop=none"
+    ]
 }

@@ -1,7 +1,11 @@
 {
-    "search": "tit for tat lyrics",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 9:00:00\u202fPM UTC-7",
+    "search": "snake eyes 1998",
+    "explanation": NaN,
+    "start_trending": "September 24, 2025 at 10:30:00\u202fAM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p21456_p_v8_aj.jpg",
+        "https://m.media-amazon.com/images/M/MV5BMWFhNWFhOTktZmY2ZS00OTAyLTg5MWMtYTY1OTkxYWMxMDRiXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+        "https://upload.wikimedia.org/wikipedia/en/8/8b/SnakeEyesPoster.jpg"
+    ]
 }

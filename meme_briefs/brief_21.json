@@ -1,7 +1,11 @@
 {
-    "search": "starbucks stores closing",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 11:10:00\u202fPM UTC-7",
+    "search": "lindsey halligan",
+    "explanation": NaN,
+    "start_trending": "September 20, 2025 at 4:50:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Lindsey_Halligan_in_2025.jpg/250px-Lindsey_Halligan_in_2025.jpg",
+        "https://static.toiimg.com/thumb/msid-124025538,imgsize-41628,width-400,resizemode-4/who-is-lindsey-halligan.jpg",
+        "https://usattorneys.com/usattorneys_media/lawyer/12727.webp"
+    ]
 }

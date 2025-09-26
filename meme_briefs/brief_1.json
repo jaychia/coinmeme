@@ -1,7 +1,11 @@
 {
-    "search": "voddie baucham",
-    "explanation": "",
-    "start_trending": "September 25, 2025 at 2:40:00\u202fPM UTC-7",
+    "search": "tylenol",
+    "explanation": NaN,
+    "start_trending": "September 21, 2025 at 3:50:00\u202fPM UTC-7",
     "end_trending": NaN,
-    "image_prompt": []
+    "google_image_prompt": [
+        "https://m.media-amazon.com/images/I/71zs2I5LGnL._UF894,1000_QL80_.jpg",
+        "https://images.ctfassets.net/1wwtzdkddony/1sBYXc36ytRaGMA6zVFz8O/944b7d48b1bde553afbd1f81a281faaf/TYL_300450444271_US_Ex_St_Caplets_Fever_Pain_Reliever_500mg_225CT_OBWB.webp?fm=webp&w=3840",
+        "https://i5.walmartimages.com/seo/Tylenol-Extra-Strength-Caplets-with-500-mg-Acetaminophen-50-Ct_5e95bf11-d935-44ee-8638-76c729486a4b.ba4c33391d94372927944d6407333eaa.jpeg"
+    ]
 }
