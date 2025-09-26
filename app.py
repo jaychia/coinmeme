@@ -23,23 +23,28 @@ def get_openai_client():
     return openai.OpenAI(api_key=api_key)
 
 def load_meme_briefs() -> List[Dict[str, Any]]:
-    """Load all meme briefs from the meme_briefs directory"""
+    """Load meme briefs from the CSV file with viral explanations"""
     briefs = []
-    brief_dir = "meme_briefs"
+    csv_path = "clay_meme_briefs/Custom-Table-Default-view-export-1758929307125.csv"
     
-    if not os.path.exists(brief_dir):
+    if not os.path.exists(csv_path):
+        st.error(f"CSV file not found: {csv_path}")
         return briefs
     
-    for filename in sorted(os.listdir(brief_dir)):
-        if filename.startswith("brief_") and filename.endswith(".json"):
-            filepath = os.path.join(brief_dir, filename)
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    brief = json.load(f)
-                    brief['filename'] = filename
-                    briefs.append(brief)
-            except Exception as e:
-                st.error(f"Error loading {filename}: {e}")
+    try:
+        df = pd.read_csv(csv_path)
+        
+        for _, row in df.iterrows():
+            brief = {
+                'search': row.get('Topic', 'Unknown'),
+                'explanation': row.get('Viral Reason Explanation', ''),
+                'detailed_reason': row.get('Viral Reason Explanation Reason', ''),
+                'source': 'clay_meme_briefs'
+            }
+            briefs.append(brief)
+            
+    except Exception as e:
+        st.error(f"Error loading CSV file: {e}")
     
     return briefs
 
@@ -62,7 +67,7 @@ def load_meme_templates() -> List[Dict[str, Any]]:
     
     return templates
 
-def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.OpenAI) -> Dict[str, str]:
+def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.OpenAI, viral_context: str = "") -> Dict[str, str]:
     """Generate meme content using OpenAI"""
     
     # Create prompt for OpenAI
@@ -76,7 +81,9 @@ def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.O
     
     Template schema: {json.dumps(schema, indent=2)}
     
-    Generate SHORT, FUNNY text for each field in the schema. Make it relevant to the topic "{topic}".
+    Viral context: {viral_context}
+    
+    Generate SHORT, FUNNY text for each field in the schema. Make it relevant to the topic "{topic}" and the viral context.
     Keep each text under 50 characters. Be concise and punchy.
     
     Return ONLY a JSON object with field names as keys and SHORT text strings as values.
@@ -460,8 +467,16 @@ def main():
         if selected_topic:
             brief = topic_options[selected_topic]
             st.info(f"**Topic:** {selected_topic}")
-            if brief.get('start_trending'):
-                st.caption(f"Started trending: {brief['start_trending']}")
+            
+            # Display viral explanation
+            if brief.get('explanation'):
+                st.subheader("🔥 Why It's Going Viral:")
+                st.write(brief['explanation'])
+            
+            # Display detailed reason if available
+            if brief.get('detailed_reason'):
+                with st.expander("📊 Detailed Analysis"):
+                    st.write(brief['detailed_reason'])
     
     with col2:
         st.header("🎨 Select a Meme Template")
@@ -520,8 +535,9 @@ def main():
                 brief = topic_options[selected_topic]
                 template = template_options[selected_template]
                 
-                # Generate meme content
-                meme_content = generate_meme_content(selected_topic, template, client)
+                # Generate meme content with viral context
+                viral_context = brief.get('explanation', '') + " " + brief.get('detailed_reason', '')
+                meme_content = generate_meme_content(selected_topic, template, client, viral_context)
                 
                 # Display generated content
                 st.subheader("Generated Meme Content:")
