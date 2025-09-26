@@ -92,21 +92,53 @@ def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.O
         )
         
         content = response.choices[0].message.content.strip()
-        # Try to parse JSON from the response
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            # If JSON parsing fails, create a simple response
-            return {key: f"Generated text for {topic}" for key in schema.keys()}
+        return json.loads(content)
             
     except Exception as e:
         st.error(f"Error generating meme content: {e}")
         return {key: f"Error generating text" for key in schema.keys()}
 
-def create_meme_image(template_name: str, meme_content: Dict[str, str]) -> Image.Image:
+def wrap_text(text: str, font, max_width: int) -> str:
+    """Wrap text to fit within the specified width"""
+    if not font:
+        return str(text)
+    
+    # Ensure text is a string
+    text = str(text)
+    words = text.split()
+    lines = []
+    current_line = []
+    
+    for word in words:
+        # Create a test line with the current word
+        test_line = ' '.join(current_line + [word])
+        
+        # Get text width using a dummy image
+        dummy_img = Image.new('RGB', (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        bbox = dummy_draw.textbbox((0, 0), test_line, font=font)
+        text_width = bbox[2] - bbox[0]
+        
+        if text_width <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+            else:
+                # Single word is too long, add it anyway
+                lines.append(word)
+    
+    if current_line:
+        lines.append(' '.join(current_line))
+    
+    return '\n'.join(lines)
+
+def create_meme_image(template: Dict[str, Any], meme_content: Dict[str, str]) -> Image.Image:
     """Create the final meme image by overlaying text on the template"""
     
     # Load the template image
+    template_name = template.get('name', '')
     template_path = f"meme_templates/{template_name}.jpg"
     
     if not os.path.exists(template_path):
@@ -139,8 +171,8 @@ def create_meme_image(template_name: str, meme_content: Dict[str, str]) -> Image
         # Get image dimensions
         width, height = img.size
         
-        # Define text positions based on template type
-        text_positions = get_text_positions(template_name, width, height)
+        # Define text positions using bounding boxes
+        text_positions = get_text_positions(template, width, height)
         
         # Add text overlay based on template
         for field, content in meme_content.items():
@@ -151,10 +183,18 @@ def create_meme_image(template_name: str, meme_content: Dict[str, str]) -> Image
                 stroke_color = pos.get('stroke_color', 'black')
                 stroke_width = pos.get('stroke_width', 2)
                 
+                # Ensure content is a string
+                content = str(content)
+                
+                # Wrap text to fit within bounding box
+                bbox = pos.get('bbox', (0, 0, width//4, height//4))
+                box_width = bbox[2]  # Width of the bounding box
+                wrapped_text = wrap_text(content, font, box_width)
+                
                 # Draw text with stroke for better visibility
                 draw.text(
                     pos['position'], 
-                    content, 
+                    wrapped_text, 
                     font=font, 
                     fill=color,
                     stroke_fill=stroke_color,
@@ -168,62 +208,88 @@ def create_meme_image(template_name: str, meme_content: Dict[str, str]) -> Image
         st.error(f"Error creating meme image: {e}")
         return None
 
-def get_text_positions(template_name: str, width: int, height: int) -> Dict[str, Dict]:
-    """Define text positions for different meme templates"""
+def create_template_with_boxes(template: Dict[str, Any]) -> Image.Image:
+    """Create a version of the template with bounding boxes drawn on it"""
+    
+    template_name = template.get('name', '')
+    template_path = f"meme_templates/{template_name}.jpg"
+    
+    if not os.path.exists(template_path):
+        return None
+    
+    try:
+        # Open the template image
+        img = Image.open(template_path)
+        img = img.convert('RGB')
+        
+        # Create a copy for drawing
+        draw = ImageDraw.Draw(img)
+        
+        # Get image dimensions
+        width, height = img.size
+        
+        # Get bounding boxes
+        bounding_boxes = template.get('bounding_boxes', {})
+        
+        # Draw bounding boxes
+        for field, bbox in bounding_boxes.items():
+            # Convert relative coordinates to absolute pixels
+            x = int(bbox['x'] * width)
+            y = int(bbox['y'] * height)
+            box_width = int(bbox['width'] * width)
+            box_height = int(bbox['height'] * height)
+            
+            # Draw rectangle outline
+            draw.rectangle(
+                [x, y, x + box_width, y + box_height],
+                outline="red",
+                width=3
+            )
+            
+            # Draw field name in the box
+            try:
+                font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 16)
+            except:
+                font = ImageFont.load_default()
+            
+            # Calculate text position (center of box)
+            text_x = x + box_width // 2
+            text_y = y + box_height // 2
+            
+            # Draw field name with background
+            text_bbox = draw.textbbox((0, 0), field, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            
+            # Draw background rectangle for text
+            padding = 4
+            draw.rectangle(
+                [text_x - text_width//2 - padding, text_y - text_height//2 - padding,
+                 text_x + text_width//2 + padding, text_y + text_height//2 + padding],
+                fill="red",
+                outline="white"
+            )
+            
+            # Draw text
+            draw.text(
+                (text_x, text_y),
+                field,
+                font=font,
+                fill="white",
+                anchor="mm"
+            )
+        
+        return img
+        
+    except Exception as e:
+        st.error(f"Error creating template with boxes: {e}")
+        return None
+
+def get_text_positions(template: Dict[str, Any], width: int, height: int) -> Dict[str, Dict]:
+    """Get text positions using bounding boxes from template data"""
     
     positions = {}
-    
-    if template_name == "distracted_boyfriend":
-        positions = {
-            "boyfriend": {"position": (width//2, height//2), "font": "large", "color": "white"},
-            "girlfriend": {"position": (width//4, height//2), "font": "medium", "color": "white"},
-            "other_girl": {"position": (3*width//4, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "two_buttons":
-        positions = {
-            "option_1": {"position": (width//4, height//2), "font": "medium", "color": "white"},
-            "option_2": {"position": (3*width//4, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "one_does_not_simply":
-        positions = {
-            "task": {"position": (width//2, height//2), "font": "large", "color": "white"}
-        }
-    elif template_name == "change_my_mind":
-        positions = {
-            "statement": {"position": (width//2, height//2), "font": "medium", "color": "black"}
-        }
-    elif template_name == "batman_slapping_robin":
-        positions = {
-            "robin_says": {"position": (width//4, height//2), "font": "medium", "color": "white"},
-            "batman_replies": {"position": (3*width//4, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "kermit_sipping_tea":
-        positions = {
-            "observation": {"position": (width//2, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "left_exit_ramp":
-        positions = {
-            "main_road": {"position": (width//2, height//3), "font": "medium", "color": "white"},
-            "exit_ramp": {"position": (width//2, 2*height//3), "font": "medium", "color": "white"}
-        }
-    elif template_name == "running_away_balloon":
-        positions = {
-            "person": {"position": (width//4, height//2), "font": "medium", "color": "white"},
-            "balloon": {"position": (3*width//4, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "uno_draw_25":
-        positions = {
-            "action": {"position": (width//2, height//3), "font": "medium", "color": "white"},
-            "consequence": {"position": (width//2, 2*height//3), "font": "large", "color": "red"}
-        }
-    elif template_name == "sad_pablo_escobar":
-        positions = {
-            "feeling_or_situation": {"position": (width//2, height//2), "font": "medium", "color": "white"}
-        }
-    elif template_name == "bernie_once_again":
-        positions = {
-            "request": {"position": (width//2, height//2), "font": "medium", "color": "white"}
-        }
+    bounding_boxes = template.get('bounding_boxes', {})
     
     # Convert font names to actual font objects
     try:
@@ -237,10 +303,43 @@ def get_text_positions(template_name: str, width: int, height: int) -> Dict[str,
     
     font_map = {"large": font_large, "medium": font_medium, "small": font_small}
     
-    # Update positions with actual font objects
-    for field, pos in positions.items():
-        if 'font' in pos and isinstance(pos['font'], str):
-            pos['font'] = font_map.get(pos['font'], font_medium)
+    # Process each bounding box
+    for field, bbox in bounding_boxes.items():
+        # Convert relative coordinates to absolute pixels
+        x = int(bbox['x'] * width)
+        y = int(bbox['y'] * height)
+        box_width = int(bbox['width'] * width)
+        box_height = int(bbox['height'] * height)
+        
+        # Calculate center position for text
+        center_x = x + box_width // 2
+        center_y = y + box_height // 2
+        
+        # Determine font size based on bounding box size
+        if box_height > 0.25 * height:
+            font_size = "large"
+        elif box_height > 0.15 * height:
+            font_size = "medium"
+        else:
+            font_size = "small"
+        
+        # Determine text color based on template
+        template_name = template.get('name', '')
+        if template_name == "change_my_mind":
+            color = "black"
+        elif template_name == "uno_draw_25" and field == "consequence":
+            color = "red"
+        else:
+            color = "white"
+        
+        positions[field] = {
+            "position": (center_x, center_y),
+            "font": font_map.get(font_size, font_medium),
+            "color": color,
+            "stroke_color": "black" if color == "white" else "white",
+            "stroke_width": 2,
+            "bbox": (x, y, box_width, box_height)
+        }
     
     return positions
 
@@ -311,6 +410,23 @@ def main():
             st.info(f"**Template:** {selected_template}")
             st.caption(template.get('explanation', 'No description available'))
             
+            # Display template image
+            template_path = f"meme_templates/{selected_template}.jpg"
+            if os.path.exists(template_path):
+                st.subheader("Template Preview:")
+                
+                # Show bounding boxes on template
+                if st.checkbox("Show Text Areas", value=True, help="Display bounding boxes where text will be placed"):
+                    template_with_boxes = create_template_with_boxes(template)
+                    if template_with_boxes:
+                        st.image(template_with_boxes, caption=f"{selected_template} template with text areas", use_container_width=True)
+                    else:
+                        st.image(template_path, caption=f"{selected_template} template", use_container_width=True)
+                else:
+                    st.image(template_path, caption=f"{selected_template} template", use_container_width=True)
+            else:
+                st.warning(f"Template image not found: {template_path}")
+            
             # Show template schema
             schema = template.get('schema', {})
             if schema:
@@ -339,11 +455,11 @@ def main():
                     st.text(f"**{field}:** {content}")
                 
                 # Create and display the meme image
-                meme_image = create_meme_image(selected_template, meme_content)
+                meme_image = create_meme_image(template, meme_content)
                 
                 if meme_image:
                     st.subheader("Your Meme:")
-                    st.image(meme_image, caption=f"Meme about {selected_topic}", use_column_width=True)
+                    st.image(meme_image, caption=f"Meme about {selected_topic}", use_container_width=True)
                     
                     # Add download button
                     from io import BytesIO
