@@ -76,8 +76,13 @@ def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.O
     
     Template schema: {json.dumps(schema, indent=2)}
     
-    Generate appropriate text for each field in the schema. Make it funny and relevant to the topic "{topic}".
-    Return only a JSON object with the field names as keys and the generated text as values.
+    Generate SHORT, FUNNY text for each field in the schema. Make it relevant to the topic "{topic}".
+    Keep each text under 50 characters. Be concise and punchy.
+    
+    Return ONLY a JSON object with field names as keys and SHORT text strings as values.
+    Example format: {{"field1": "short funny text", "field2": "another short text"}}
+    
+    Do NOT include descriptions, explanations, or metadata. Just the raw text content.
     """
     
     try:
@@ -92,7 +97,34 @@ def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.O
         )
         
         content = response.choices[0].message.content.strip()
-        return json.loads(content)
+        
+        try:
+            result = json.loads(content)
+            
+            # Clean up the result to extract only text values
+            cleaned_result = {}
+            for field, value in result.items():
+                if isinstance(value, dict):
+                    # If it's a dict with description, extract the description
+                    if 'description' in value:
+                        cleaned_result[field] = value['description']
+                    else:
+                        # Take the first string value from the dict
+                        for v in value.values():
+                            if isinstance(v, str):
+                                cleaned_result[field] = v
+                                break
+                elif isinstance(value, str):
+                    cleaned_result[field] = value
+                else:
+                    cleaned_result[field] = str(value)
+            
+            return cleaned_result
+            
+        except json.JSONDecodeError:
+            # If JSON parsing fails, try to extract text from the response
+            st.warning("Failed to parse JSON response, using fallback text extraction")
+            return {key: f"Generated text for {topic}" for key in schema.keys()}
             
     except Exception as e:
         st.error(f"Error generating meme content: {e}")
@@ -134,6 +166,45 @@ def wrap_text(text: str, font, max_width: int) -> str:
     
     return '\n'.join(lines)
 
+def fit_text_to_bbox(text: str, font, bbox_width: int, bbox_height: int) -> tuple:
+    """Try different font sizes to fit text optimally in bounding box"""
+    if not font:
+        return str(text), font
+    
+    # Try different font sizes to maximize text usage
+    font_sizes = [24, 20, 18, 16, 14, 12, 10]
+    
+    for size in font_sizes:
+        try:
+            test_font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", size)
+        except:
+            test_font = font
+        
+        # Test if text fits with this font size
+        dummy_img = Image.new('RGB', (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        
+        # Test single line first
+        bbox = dummy_draw.textbbox((0, 0), text, font=test_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        if text_width <= bbox_width and text_height <= bbox_height:
+            return text, test_font
+        
+        # Test wrapped text
+        wrapped = wrap_text(text, test_font, bbox_width)
+        lines = wrapped.split('\n')
+        
+        # Calculate total height for wrapped text
+        total_height = len(lines) * text_height
+        
+        if total_height <= bbox_height:
+            return wrapped, test_font
+    
+    # Fallback to original
+    return wrap_text(text, font, bbox_width), font
+
 def create_meme_image(template: Dict[str, Any], meme_content: Dict[str, str]) -> Image.Image:
     """Create the final meme image by overlaying text on the template"""
     
@@ -155,9 +226,9 @@ def create_meme_image(template: Dict[str, Any], meme_content: Dict[str, str]) ->
         
         # Try to load a font, fallback to default if not available
         try:
-            font_large = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 36)
-            font_medium = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 24)
-            font_small = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 18)
+            font_large = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 24)
+            font_medium = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 18)
+            font_small = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 14)
         except:
             try:
                 font_large = ImageFont.load_default()
@@ -189,13 +260,16 @@ def create_meme_image(template: Dict[str, Any], meme_content: Dict[str, str]) ->
                 # Wrap text to fit within bounding box
                 bbox = pos.get('bbox', (0, 0, width//4, height//4))
                 box_width = bbox[2]  # Width of the bounding box
-                wrapped_text = wrap_text(content, font, box_width)
+                box_height = bbox[3]  # Height of the bounding box
+                
+                # Fit text optimally to the bounding box
+                fitted_text, optimal_font = fit_text_to_bbox(content, font, box_width, box_height)
                 
                 # Draw text with stroke for better visibility
                 draw.text(
                     pos['position'], 
-                    wrapped_text, 
-                    font=font, 
+                    fitted_text, 
+                    font=optimal_font, 
                     fill=color,
                     stroke_fill=stroke_color,
                     stroke_width=stroke_width,
@@ -315,10 +389,10 @@ def get_text_positions(template: Dict[str, Any], width: int, height: int) -> Dic
         center_x = x + box_width // 2
         center_y = y + box_height // 2
         
-        # Determine font size based on bounding box size
-        if box_height > 0.25 * height:
+        # Determine font size based on bounding box size - more aggressive sizing
+        if box_height > 0.3 * height:
             font_size = "large"
-        elif box_height > 0.15 * height:
+        elif box_height > 0.2 * height:
             font_size = "medium"
         else:
             font_size = "small"
@@ -459,7 +533,9 @@ def main():
                 
                 if meme_image:
                     st.subheader("Your Meme:")
-                    st.image(meme_image, caption=f"Meme about {selected_topic}", use_container_width=True)
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        st.image(meme_image, caption=f"Meme about {selected_topic}", use_container_width=True)
                     
                     # Add download button
                     from io import BytesIO
