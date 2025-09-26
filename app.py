@@ -314,11 +314,11 @@ def create_template_with_boxes(template: Dict[str, Any]) -> Image.Image:
         
         # Draw bounding boxes
         for field, bbox in bounding_boxes.items():
-            # Convert relative coordinates to absolute pixels
-            x = int(bbox['x'] * width)
-            y = int(bbox['y'] * height)
-            box_width = int(bbox['width'] * width)
-            box_height = int(bbox['height'] * height)
+            # Use absolute pixel coordinates directly
+            x = bbox['x']
+            y = bbox['y']
+            box_width = bbox['width']
+            box_height = bbox['height']
             
             # Draw rectangle outline
             draw.rectangle(
@@ -386,11 +386,11 @@ def get_text_positions(template: Dict[str, Any], width: int, height: int) -> Dic
     
     # Process each bounding box
     for field, bbox in bounding_boxes.items():
-        # Convert relative coordinates to absolute pixels
-        x = int(bbox['x'] * width)
-        y = int(bbox['y'] * height)
-        box_width = int(bbox['width'] * width)
-        box_height = int(bbox['height'] * height)
+        # Use absolute pixel coordinates directly
+        x = bbox['x']
+        y = bbox['y']
+        box_width = bbox['width']
+        box_height = bbox['height']
         
         # Calculate center position for text
         center_x = x + box_width // 2
