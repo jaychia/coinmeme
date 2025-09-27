@@ -50,6 +50,7 @@ def load_meme_briefs() -> List[Dict[str, Any]]:
     
     return briefs
 
+@st.cache_data
 def load_meme_templates() -> List[Dict[str, Any]]:
     """Load meme templates from memedb.jsonl"""
     templates = []
@@ -72,6 +73,8 @@ def load_meme_templates() -> List[Dict[str, Any]]:
 def save_new_template(template: Dict[str, Any], image: Image.Image) -> bool:
     """Save a new template to memedb.jsonl and save the image to meme_templates/"""
     try:
+        st.info("Starting template save process...")
+        
         # Get template name and clean it
         original_name = template.get('name', 'custom_template')
         template_name = original_name.lower().replace(' ', '_').replace('-', '_').replace('"', '').replace("'", '').replace('!', '').replace('?', '').replace(':', '').replace(';', '').replace(',', '').replace('.', '')
@@ -79,32 +82,64 @@ def save_new_template(template: Dict[str, Any], image: Image.Image) -> bool:
         
         # Ensure unique name by checking existing templates
         existing_templates = load_meme_templates()
+        st.info(f"Found {len(existing_templates)} existing templates")
+        
         counter = 1
-        original_name = template_name
+        original_clean_name = template_name
         while any(t.get('name') == template_name for t in existing_templates):
-            template_name = f"{original_name}_{counter}"
+            template_name = f"{original_clean_name}_{counter}"
             counter += 1
+            st.info(f"Name conflict, trying: {template_name}")
         
         # Update template with final name
         template['name'] = template_name
+        st.info(f"Final template name: {template_name}")
         
         # Ensure meme_templates directory exists
         os.makedirs("meme_templates", exist_ok=True)
+        st.info("Created meme_templates directory")
         
         # Save image to meme_templates/
         image_path = f"meme_templates/{template_name}.jpg"
-        image.save(image_path, "JPEG")
-        st.info(f"Image saved to: {image_path}")
+        st.info(f"Attempting to save image to: {image_path}")
+        
+        # Convert image to RGB if needed
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            st.info("Converted image to RGB")
+        
+        image.save(image_path, "JPEG", quality=95)
+        st.success(f"✅ Image saved successfully to: {image_path}")
+        
+        # Verify image was saved
+        if os.path.exists(image_path):
+            file_size = os.path.getsize(image_path)
+            st.info(f"Image file verified: {file_size} bytes")
+        else:
+            st.error("❌ Image file was not created!")
+            return False
         
         # Save template to memedb.jsonl
+        st.info("Saving template to memedb.jsonl...")
         with open("memedb.jsonl", "a", encoding='utf-8') as f:
             f.write(json.dumps(template) + "\n")
-        st.info(f"Template saved to memedb.jsonl with name: {template_name}")
+        st.success(f"✅ Template saved to memedb.jsonl with name: {template_name}")
+        
+        # Verify template was saved
+        with open("memedb.jsonl", "r", encoding='utf-8') as f:
+            lines = f.readlines()
+            st.info(f"memedb.jsonl now has {len(lines)} lines")
+        
+        # Clear the cache to force reload of templates
+        load_meme_templates.clear()
+        st.info("Cache cleared, templates will reload on next access")
         
         return True
         
     except Exception as e:
-        st.error(f"Error saving template: {e}")
+        st.error(f"❌ Error saving template: {e}")
+        import traceback
+        st.error(f"Full error traceback: {traceback.format_exc()}")
         return False
 
 def analyze_image_for_meme_template(image: Image.Image, description: str, client: openai.OpenAI) -> Dict[str, Any]:
@@ -745,11 +780,19 @@ def main():
                 # Analyze button
                 if st.button("🔍 Analyze Image & Create Template", type="primary"):
                     with st.spinner("Analyzing image with AI..."):
+                        st.info("Starting image analysis...")
                         client = get_openai_client()
+                        st.info("OpenAI client initialized")
+                        
                         new_template = analyze_image_for_meme_template(image, template_description, client)
                         
                         if new_template:
+                            # Store template in session state
+                            st.session_state.new_template = new_template
+                            st.session_state.new_template_image = image
+                            
                             st.success("✅ Template created successfully!")
+                            st.info(f"Template object: {new_template}")
                             
                             # Display generated template info
                             st.subheader("Generated Template:")
@@ -768,18 +811,28 @@ def main():
                             template_with_boxes = create_template_with_boxes(new_template)
                             if template_with_boxes:
                                 st.image(template_with_boxes, caption="Template with text areas", use_container_width=True)
-                            
-                            # Save template
-                            if st.button("💾 Save Template", type="secondary"):
-                                if save_new_template(new_template, image):
-                                    st.success("🎉 Template saved successfully!")
-                                    st.rerun()  # Refresh to show new template
-                                else:
-                                    st.error("❌ Failed to save template")
+                        else:
+                            st.error("❌ Failed to create template from image analysis")
+                
+                # Show save button if template exists in session state
+                if 'new_template' in st.session_state and st.session_state.new_template:
+                    st.markdown("---")
+                    if st.button("💾 Save Template", type="secondary"):
+                        print("Saving template")
+                        st.info("Starting save process...")
+                        if save_new_template(st.session_state.new_template, st.session_state.new_template_image):
+                            st.success("🎉 Template saved successfully!")
+                            # Clear session state
+                            del st.session_state.new_template
+                            del st.session_state.new_template_image
+                            st.rerun()  # Refresh to show new template
+                        else:
+                            print("Error happened")
+                            st.error("❌ Failed to save template")
             
             # Show current template if one was just created
-            if 'new_template' in locals() and new_template:
-                template = new_template
+            if 'new_template' in st.session_state and st.session_state.new_template:
+                template = st.session_state.new_template
                 
                 # Display template image
                 template_path = f"meme_templates/{template.get('name', '')}.jpg"
