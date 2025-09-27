@@ -5,6 +5,8 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import openai
 from typing import Dict, List, Any
+import base64
+from io import BytesIO
 
 # Configure page
 st.set_page_config(
@@ -67,6 +69,171 @@ def load_meme_templates() -> List[Dict[str, Any]]:
     
     return templates
 
+def save_new_template(template: Dict[str, Any], image: Image.Image) -> bool:
+    """Save a new template to memedb.jsonl and save the image to meme_templates/"""
+    try:
+        # Get template name and clean it
+        original_name = template.get('name', 'custom_template')
+        template_name = original_name.lower().replace(' ', '_').replace('-', '_').replace('"', '').replace("'", '').replace('!', '').replace('?', '').replace(':', '').replace(';', '').replace(',', '').replace('.', '')
+        st.info(f"Original template name: '{original_name}' -> Cleaned name: '{template_name}'")
+        
+        # Ensure unique name by checking existing templates
+        existing_templates = load_meme_templates()
+        counter = 1
+        original_name = template_name
+        while any(t.get('name') == template_name for t in existing_templates):
+            template_name = f"{original_name}_{counter}"
+            counter += 1
+        
+        # Update template with final name
+        template['name'] = template_name
+        
+        # Ensure meme_templates directory exists
+        os.makedirs("meme_templates", exist_ok=True)
+        
+        # Save image to meme_templates/
+        image_path = f"meme_templates/{template_name}.jpg"
+        image.save(image_path, "JPEG")
+        st.info(f"Image saved to: {image_path}")
+        
+        # Save template to memedb.jsonl
+        with open("memedb.jsonl", "a", encoding='utf-8') as f:
+            f.write(json.dumps(template) + "\n")
+        st.info(f"Template saved to memedb.jsonl with name: {template_name}")
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"Error saving template: {e}")
+        return False
+
+def analyze_image_for_meme_template(image: Image.Image, description: str, client: openai.OpenAI) -> Dict[str, Any]:
+    """Analyze an uploaded image to create a meme template using OpenAI Vision"""
+    
+    # Convert PIL image to base64
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    prompt = f"""
+    Analyze this image as a potential meme template. The user provided this description: "{description}"
+    
+    Based on the image and description, create a meme template JSON structure with:
+    1. A descriptive name for the template
+    2. An explanation of what the meme represents
+    3. A schema defining text fields that can be overlaid on the image
+    4. Bounding boxes for each text field with x, y, width, height coordinates
+    
+    Look for areas in the image where text is typically placed in memes (speech bubbles, signs, captions, etc.).
+    Identify 1-4 text areas that would make sense for meme text.
+    
+    Return ONLY a JSON object with this structure:
+    {{
+        "name": "descriptive_template_name",
+        "explanation": "What this meme template represents",
+        "schema": {{
+            "field1": {{"description": "What this text field represents"}},
+            "field2": {{"description": "What this text field represents"}}
+        }},
+        "bounding_boxes": {{
+            "field1": {{"x": 100, "y": 200, "width": 300, "height": 80}},
+            "field2": {{"x": 150, "y": 400, "width": 250, "height": 60}}
+        }}
+    }}
+    
+    Use absolute pixel coordinates based on the image dimensions. Make sure bounding boxes are positioned appropriately for text placement.
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{img_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1000,
+            response_format={"type": "json_object"}
+        )
+        
+        content = response.choices[0].message.content.strip()
+        
+        try:
+            template = json.loads(content)
+            return template
+        except json.JSONDecodeError:
+            # Try to extract JSON from the response if it's wrapped in markdown or other text
+            import re
+            
+            # Look for JSON in code blocks
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+            if json_match:
+                try:
+                    template = json.loads(json_match.group(1))
+                    return template
+                except json.JSONDecodeError:
+                    pass
+            
+            # Look for JSON object in the text
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                try:
+                    template = json.loads(json_match.group(0))
+                    return template
+                except json.JSONDecodeError:
+                    pass
+            
+            # If all else fails, create a basic template structure
+            st.warning("Could not parse JSON response, creating basic template structure")
+            
+            # Extract basic info from the response
+            lines = content.split('\n')
+            name = "custom_template"
+            explanation = "Custom meme template"
+            
+            # Try to extract name and explanation from the response
+            for line in lines:
+                if 'name' in line.lower() and ':' in line:
+                    name_part = line.split(':')[-1].strip().strip('"\'')
+                    if name_part:
+                        name = name_part
+                elif 'explanation' in line.lower() and ':' in line:
+                    exp_part = line.split(':')[-1].strip().strip('"\'')
+                    if exp_part:
+                        explanation = exp_part
+            
+            # Create a basic template structure
+            template = {
+                "name": name.lower().replace(' ', '_').replace('-', '_'),
+                "explanation": explanation,
+                "schema": {
+                    "text1": {"description": "Main text for the meme"},
+                    "text2": {"description": "Secondary text for the meme"}
+                },
+                "bounding_boxes": {
+                    "text1": {"x": 50, "y": 50, "width": 300, "height": 80},
+                    "text2": {"x": 50, "y": 200, "width": 300, "height": 80}
+                }
+            }
+            
+            return template
+            
+    except Exception as e:
+        st.error(f"Error analyzing image: {e}")
+        return None
+
 def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.OpenAI, viral_context: str = "") -> Dict[str, str]:
     """Generate meme content using OpenAI"""
     
@@ -100,7 +267,8 @@ def generate_meme_content(topic: str, template: Dict[str, Any], client: openai.O
                 {"role": "user", "content": prompt}
             ],
             temperature=0.8,
-            max_tokens=500
+            max_tokens=500,
+            response_format={"type": "json_object"}
         )
         
         content = response.choices[0].message.content.strip()
@@ -446,6 +614,11 @@ def main():
         st.error("No meme templates found. Please check the memedb.jsonl file.")
         st.stop()
     
+    # Initialize variables
+    selected_template = None
+    template = None
+    new_template = None
+    
     # Create two columns
     col1, col2 = st.columns([1, 1])
     
@@ -479,61 +652,177 @@ def main():
                     st.write(brief['detailed_reason'])
     
     with col2:
-        st.header("🎨 Select a Meme Template")
+        st.header("🎨 Meme Template")
         
-        # Display templates
-        template_options = {}
-        for template in templates:
-            name = template.get('name', 'Unknown')
-            explanation = template.get('explanation', 'No description available')
-            template_options[name] = template
-        
-        selected_template = st.selectbox(
-            "Choose a meme template:",
-            options=list(template_options.keys()),
-            key="template_select"
+        # Mode selector
+        template_mode = st.radio(
+            "Choose template mode:",
+            ["Use Existing Template", "Create New Template"],
+            key="template_mode"
         )
         
-        if selected_template:
-            template = template_options[selected_template]
-            st.info(f"**Template:** {selected_template}")
-            st.caption(template.get('explanation', 'No description available'))
+        if template_mode == "Use Existing Template":
+            # Display existing templates
+            template_options = {}
+            for template in templates:
+                name = template.get('name', 'Unknown')
+                explanation = template.get('explanation', 'No description available')
+                template_options[name] = template
             
-            # Display template image
-            template_path = f"meme_templates/{selected_template}.jpg"
-            if os.path.exists(template_path):
-                st.subheader("Template Preview:")
+            selected_template = st.selectbox(
+                "Choose a meme template:",
+                options=list(template_options.keys()),
+                key="template_select"
+            )
+            
+            if selected_template:
+                template = template_options[selected_template]
+                st.info(f"**Template:** {selected_template}")
+                st.caption(template.get('explanation', 'No description available'))
                 
-                # Show bounding boxes on template
-                if st.checkbox("Show Text Areas", value=True, help="Display bounding boxes where text will be placed"):
-                    template_with_boxes = create_template_with_boxes(template)
-                    if template_with_boxes:
-                        st.image(template_with_boxes, caption=f"{selected_template} template with text areas", use_container_width=True)
+                # Display template image
+                template_path = f"meme_templates/{selected_template}.jpg"
+                if os.path.exists(template_path):
+                    st.subheader("Template Preview:")
+                    
+                    # Show bounding boxes on template
+                    if st.checkbox("Show Text Areas", value=True, help="Display bounding boxes where text will be placed"):
+                        template_with_boxes = create_template_with_boxes(template)
+                        if template_with_boxes:
+                            st.image(template_with_boxes, caption=f"{selected_template} template with text areas", use_container_width=True)
+                        else:
+                            st.image(template_path, caption=f"{selected_template} template", use_container_width=True)
                     else:
                         st.image(template_path, caption=f"{selected_template} template", use_container_width=True)
                 else:
-                    st.image(template_path, caption=f"{selected_template} template", use_container_width=True)
-            else:
-                st.warning(f"Template image not found: {template_path}")
+                    st.warning(f"Template image not found: {template_path}")
+                
+                # Show template schema
+                schema = template.get('schema', {})
+                if schema:
+                    st.subheader("Template Fields:")
+                    for field, desc in schema.items():
+                        st.text(f"• {field}: {desc.get('description', 'No description')}")
+        
+        else:  # Create New Template
+            st.subheader("📸 Create New Meme Template")
             
-            # Show template schema
-            schema = template.get('schema', {})
-            if schema:
-                st.subheader("Template Fields:")
-                for field, desc in schema.items():
-                    st.text(f"• {field}: {desc.get('description', 'No description')}")
+            # Image source selection
+            image_source = st.radio(
+                "Choose image source:",
+                ["Take Photo", "Upload File"],
+                key="image_source"
+            )
+            
+            uploaded_file = None
+            
+            if image_source == "Take Photo":
+                # Camera input
+                uploaded_file = st.camera_input(
+                    "Take a photo for your meme template:",
+                    help="Take a photo that could work as a meme template"
+                )
+            else:
+                # File upload
+                uploaded_file = st.file_uploader(
+                    "Upload an image for your meme template:",
+                    type=['png', 'jpg', 'jpeg'],
+                    help="Upload an image that could work as a meme template"
+                )
+            
+            # Description input
+            template_description = st.text_area(
+                "Describe your meme template:",
+                placeholder="e.g., 'A person looking confused at a computer screen' or 'Two people having an argument'",
+                help="Provide a brief description of what your meme template represents"
+            )
+            
+            if uploaded_file and template_description:
+                # Display uploaded image
+                image = Image.open(uploaded_file)
+                st.image(image, caption="Uploaded image", use_container_width=True)
+                
+                # Analyze button
+                if st.button("🔍 Analyze Image & Create Template", type="primary"):
+                    with st.spinner("Analyzing image with AI..."):
+                        client = get_openai_client()
+                        new_template = analyze_image_for_meme_template(image, template_description, client)
+                        
+                        if new_template:
+                            st.success("✅ Template created successfully!")
+                            
+                            # Display generated template info
+                            st.subheader("Generated Template:")
+                            st.write(f"**Name:** {new_template.get('name', 'Unknown')}")
+                            st.write(f"**Description:** {new_template.get('explanation', 'No description')}")
+                            
+                            # Show schema
+                            schema = new_template.get('schema', {})
+                            if schema:
+                                st.write("**Text Fields:**")
+                                for field, desc in schema.items():
+                                    st.write(f"• {field}: {desc.get('description', 'No description')}")
+                            
+                            # Show bounding boxes on image
+                            st.subheader("Template with Text Areas:")
+                            template_with_boxes = create_template_with_boxes(new_template)
+                            if template_with_boxes:
+                                st.image(template_with_boxes, caption="Template with text areas", use_container_width=True)
+                            
+                            # Save template
+                            if st.button("💾 Save Template", type="secondary"):
+                                if save_new_template(new_template, image):
+                                    st.success("🎉 Template saved successfully!")
+                                    st.rerun()  # Refresh to show new template
+                                else:
+                                    st.error("❌ Failed to save template")
+            
+            # Show current template if one was just created
+            if 'new_template' in locals() and new_template:
+                template = new_template
+                
+                # Display template image
+                template_path = f"meme_templates/{template.get('name', '')}.jpg"
+                if os.path.exists(template_path):
+                    st.subheader("Template Preview:")
+                    
+                    # Show bounding boxes on template
+                    if st.checkbox("Show Text Areas", value=True, help="Display bounding boxes where text will be placed"):
+                        template_with_boxes = create_template_with_boxes(template)
+                        if template_with_boxes:
+                            st.image(template_with_boxes, caption=f"{template.get('name', '')} template with text areas", use_container_width=True)
+                        else:
+                            st.image(template_path, caption=f"{template.get('name', '')} template", use_container_width=True)
+                    else:
+                        st.image(template_path, caption=f"{template.get('name', '')} template", use_container_width=True)
+                else:
+                    st.warning(f"Template image not found: {template_path}")
+                
+                # Show template schema
+                schema = template.get('schema', {})
+                if schema:
+                    st.subheader("Template Fields:")
+                    for field, desc in schema.items():
+                        st.text(f"• {field}: {desc.get('description', 'No description')}")
     
     # Generate meme button
     st.markdown("---")
     
     if st.button("🎭 Generate Meme!", type="primary"):
-        if not selected_topic or not selected_template:
-            st.error("Please select both a topic and a template!")
+        if not selected_topic:
+            st.error("Please select a topic!")
+        elif template_mode == "Use Existing Template" and not selected_template:
+            st.error("Please select a template!")
+        elif template_mode == "Create New Template" and not template:
+            st.error("Please create a new template first!")
         else:
             with st.spinner("Generating your meme..."):
                 client = get_openai_client()
                 brief = topic_options[selected_topic]
-                template = template_options[selected_template]
+                
+                # Get template based on mode
+                if template_mode == "Use Existing Template":
+                    template = template_options[selected_template]
                 
                 # Generate meme content with viral context
                 viral_context = brief.get('explanation', '') + " " + brief.get('detailed_reason', '')
